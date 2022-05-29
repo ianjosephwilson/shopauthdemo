@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+    </head>
+    <body>
+        <div id="app"></div>
+
+        <script src="https://unpkg.com/@shopify/app-bridge@3.0"></script>
+        <script src="https://unpkg.com/@shopify/app-bridge-utils@3.0"></script>
+        <script src="https://unpkg.com/mithril/mithril.js"></script>
+        <script>
+         /*
+            The config is injected by the server during the template rendering either dynamically
+            or statically.  The {config_json_str} with braces should be replaced by a json object
+            containing the configuration.
+          */
+         (function (config) {
+             'use strict';
+             var m = window['m'];
+             var AppBridge = window['app-bridge'];
+             var AppBridgeUtils = window['app-bridge-utils']
+             var actions = window['app-bridge'].actions;
+             var History = actions.History;
+             var Redirect = actions.Redirect
+             var app = AppBridge.createApp({
+                 apiKey: config.apiKey,
+                 host: new URL(location).searchParams.get("host"),
+             });
+             var appHistory = History.create(app);
+             var HomePage = {
+                 view: function() {
+                     return m('div', [
+                         m('h1', 'Welcome'),
+                         m(m.route.Link, {href:"/pages/shop"}, "Go To Shop Page")
+                     ]);
+                 }
+             }
+             var ShopPage = {
+                 view: function(vnode) {
+                     return m('div', 'This app is using the shop with name ' + appState.shop.name + '.');
+                 }
+             }
+
+             var appState = {
+                 shop: {name: ""}
+             };
+
+
+             // Expect regular urls and not older hash-bang style urls.
+             m.route.prefix = ''
+
+             app.subscribe(Redirect.Action.APP, function(redirectData) {
+                 // Try to redirect.
+                 m.route.set(redirectData.path);
+             });
+
+             function notifyShopify(component, preload) {
+                 /* Notify shopify that our path has changed and they should change theirs. */
+                 return {
+                     onmatch: function (_, path) {
+                         appHistory.dispatch(History.Action.PUSH, path);
+                         // If the target route requires preloading then load it first.
+                         if (preload) {
+                             return preload();
+                         }
+                     },
+                     render: function () {
+                         return m(component)
+                     }
+                 };
+             }
+             function authenticatedOptions(options) {
+                 /* Promise of options needed to POST to app server. */
+                 return AppBridgeUtils.getSessionToken(app).then(function (sessionToken) {
+                     options.method = 'POST';
+                     if (!options.headers) {
+                         options.headers = {}
+                     }
+                     options.headers.Authorization = 'Bearer ' + sessionToken;
+                     return options;
+                 })
+             }
+             m.route(document.getElementById('app'), "/", {
+                 "/": notifyShopify(HomePage),
+                 // This url doesn't match as long as it starts with /pages/
+                 // because we just load the app skeleton if its a cold load
+                 // otherwise we are only using client-side routing.
+                 "/pages/shop": notifyShopify(ShopPage, function () {
+                     return new Promise(function(resolve, reject) {
+                         authenticatedOptions({
+                             url: '/api/shop',
+                             body: {}
+                         }).then(function (options) {
+                             m.request(options).then(function(response) {
+                                 appState.shop.name = response.data.shop.name;
+                                 resolve(response);
+                             }, reject);
+                         });
+                     });
+                 })
+             });
+         }({config_json_str}));
+        </script>
+
+    </body>
+</html>
