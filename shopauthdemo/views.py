@@ -16,6 +16,7 @@ from .model import ShopSession
 
 logger = logging.getLogger(__name__)
 
+PREFIX = "/shopapp"
 
 def auth(request):
     # Lib takes over.
@@ -70,7 +71,7 @@ def home(request):
         # @TODO We should clearly do something different here.
         content = content.replace(
             "{config_json_str}",
-            json.dumps({"apiKey": request.shopauth.config.api_key}),
+            json.dumps({"appPrefix": PREFIX, "apiKey": request.shopauth.config.api_key}),
         )
     response = request.response
     response.text = content
@@ -87,12 +88,13 @@ def clean_csv(csv):
 
 def includeme(config):
 
-    config.add_route("auth", "/auth")
-    config.add_route("auth-toplevel", "/auth/toplevel")
-    config.add_route("auth-callback", "/auth/callback")
-    config.add_route("home", "/")
-    config.add_route("api-shop", "/api/shop")
-    config.add_route("pages", "/pages/{url}")
+    
+    config.add_route("auth", PREFIX + "/auth")
+    config.add_route("auth-toplevel", PREFIX + "/auth/toplevel")
+    config.add_route("auth-callback", PREFIX + "/auth/callback")
+    config.add_route("home", PREFIX)
+    config.add_route("api-shop", PREFIX + "/api/shop")
+    config.add_route("pages", PREFIX + "/pages/{url}")
     config.add_view(auth, route_name="auth")
     config.add_view(auth_toplevel, route_name="auth-toplevel")
     config.add_view(auth_callback, route_name="auth-callback")

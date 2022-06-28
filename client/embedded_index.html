@@ -17,6 +17,7 @@
           */
          (function (config) {
              'use strict';
+             // The prefix our app is hosted at.
              var m = window['m'];
              var AppBridge = window['app-bridge'];
              var AppBridgeUtils = window['app-bridge-utils']
@@ -32,7 +33,7 @@
                  view: function() {
                      return m('div', [
                          m('h1', 'Welcome'),
-                         m(m.route.Link, {href:"/pages/shop"}, "Go To Shop Page")
+                         m(m.route.Link, {href: config.appPrefix + "/pages/shop"}, "Go To Shop Page")
                      ]);
                  }
              }
@@ -81,25 +82,23 @@
                      return options;
                  })
              }
-             m.route(document.getElementById('app'), "/", {
-                 "/": notifyShopify(HomePage),
-                 // This url doesn't match as long as it starts with /pages/
-                 // because we just load the app skeleton if its a cold load
-                 // otherwise we are only using client-side routing.
-                 "/pages/shop": notifyShopify(ShopPage, function () {
-                     return new Promise(function(resolve, reject) {
-                         authenticatedOptions({
-                             url: '/api/shop',
-                             body: {}
-                         }).then(function (options) {
-                             m.request(options).then(function(response) {
-                                 appState.shop.name = response.data.shop.name;
-                                 resolve(response);
-                             }, reject);
-                         });
+             var rootPath = config.appPrefix || '/';
+             var routes = {};
+             routes[rootPath] = notifyShopify(HomePage);
+             routes[config.appPrefix + "/pages/shop"] = notifyShopify(ShopPage, function () {
+                 return new Promise(function(resolve, reject) {
+                     authenticatedOptions({
+                         url: config.appPrefix + '/api/shop',
+                         body: {}
+                     }).then(function (options) {
+                         m.request(options).then(function(response) {
+                             appState.shop.name = response.data.shop.name;
+                             resolve(response);
+                         }, reject);
                      });
-                 })
+                 });
              });
+             m.route(document.getElementById('app'), rootPath, routes);
          }({config_json_str}));
         </script>
 

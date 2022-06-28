@@ -15,7 +15,7 @@
                  view: function() {
                      return m('div', [
                          m('h1', 'Welcome'),
-                         m(m.route.Link, {href:"/pages/shop"}, "Go To Shop Page")
+                         m(m.route.Link, {href: config.appPrefix + "/pages/shop"}, "Go To Shop Page")
                      ]);
                  }
              }
@@ -46,21 +46,21 @@
                  };
              }
 
-             m.route(document.getElementById('app'), "/", {
-                 "/": resolver(HomePage),
+             m.route(document.getElementById('app'), config.appPrefix || "/", {
+                 config.appPrefix || "/": resolver(HomePage),
                  // This url doesn't match as long as it starts with /pages/
                  // because we just load the app skeleton if its a cold load
                  // otherwise we are only using client-side routing.
-                 "/pages/shop": resolver(ShopPage, function () {
+                 config.appPrefix + "/pages/shop": resolver(ShopPage, function () {
                      return m.request({
-                         url: '/api/shop',
+                         url: config.appPrefix + '/api/shop',
                          body: {}
                      }).then(function(response) {
                          appState.shop.name = response.data.shop.name;
                      });
                  })
              });
-         }());
+         }({config_json_str}));
         </script>
 
     </body>
