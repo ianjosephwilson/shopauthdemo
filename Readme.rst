@@ -31,7 +31,7 @@ Install packages
 Start up server
 ===============
 
-`ve/bin/gunicorn --bind 'localhost:5000' --reload 'shopauthdemo:main()'`
+`ve/bin/gunicorn --access-logfile '-' --bind 'localhost:5000' --reload 'shopauthdemo:main()'`
 
 Open install link found in dev dashboard for given test shop
 ============================================================
